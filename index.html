@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101b1d">
+  <title>ModuQuickPick</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f2f4eb;
+      --muted: #97aaa5;
+      --surface: #172426;
+      --surface-raised: #223133;
+      --line: #35484a;
+      --lime: #c6f56b;
+      --green: #57ed91;
+      --red: #ff6f69;
+      --amber: #f5b84f;
+      --orb-duration: .8s;
+      --slot-duration: .75s;
+      --font: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      background: #101b1d;
+      color: var(--ink);
+      font-family: var(--font);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button { color: inherit; font: inherit; }
+    .game {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 58fr) minmax(255px, 42fr);
+      background: radial-gradient(ellipse at 40% 90%, #203332 0%, #152224 56%, #10191b 100%);
+    }
+    .work-area { min-width: 0; position: relative; overflow: hidden; border-right: 1px solid #344345; }
+    .topline {
+      position: absolute;
+      z-index: 4;
+      top: max(14px, env(safe-area-inset-top));
+      left: max(20px, env(safe-area-inset-left));
+      right: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .brand { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 1.3px; }
+    .score-button {
+      border: 1px solid #415455;
+      background: #1d2b2d;
+      border-radius: 8px;
+      padding: 8px 13px;
+      min-width: 106px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .score-label { display: block; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .score-number { display: block; color: var(--lime); font-size: 23px; line-height: 1.05; font-weight: 800; }
+    .machine-scene {
+      position: absolute;
+      inset: 8% 4% 2%;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: repeating-linear-gradient(0deg, transparent 0 39px, #ffffff05 40px), linear-gradient(110deg, #ffffff02, transparent 55%);
+    }
+    .machine {
+      position: absolute;
+      left: 50%;
+      top: 49%;
+      transform: translate(-50%, -50%);
+      width: min(69%, 460px);
+      height: 88%;
+      border: 5px solid #56696a;
+      border-radius: 10px 10px 5px 5px;
+      background: linear-gradient(90deg, #344547, #263537 13%, #253436 86%, #435658 100%);
+      box-shadow: inset 10px 0 #ffffff0b, inset -9px 0 #00000030, 0 23px 48px #0007;
+    }
+    .machine::before, .machine::after { content: ""; position: absolute; top: 0; bottom: 0; width: 9px; background: repeating-linear-gradient(180deg, #849392 0 4px, #405152 4px 11px); opacity: .8; }
+    .machine::before { left: 12px; }
+    .machine::after { right: 12px; }
+    .machine-cap {
+      height: 12%; margin: 0 25px; display: flex; align-items: center; justify-content: center;
+      border-bottom: 1px solid #75858655; color: #d5ddcf; font-size: 11px; font-weight: 800; letter-spacing: 2px;
+    }
+    .machine-screen { position: absolute; top: 17%; left: 50%; width: 68px; height: 24px; transform: translateX(-50%); border: 2px solid #586a6b; border-radius: 3px; background: #102022; }
+    .machine-screen::after { content: "READY"; display: block; color: var(--green); font-size: 8px; text-align: center; line-height: 20px; letter-spacing: 1px; }
+    .lift-rails { position: absolute; top: 24%; bottom: 12%; left: 23%; right: 23%; border: 3px solid #172324; background: repeating-linear-gradient(180deg, #172324 0 17px, #314244 18px 23px); box-shadow: inset 0 0 0 3px #536566; }
+    .pick-opening { position: absolute; top: 40%; left: 10%; right: 10%; height: 34%; border: 4px solid #758485; border-bottom-width: 8px; background: #0c1415; box-shadow: 0 0 0 3px #182425, inset 0 0 24px #000; }
+    .opening-label { position: absolute; bottom: 2%; width: 100%; color: #81918e; text-align: center; font-size: 9px; letter-spacing: 1.4px; }
+    .tray {
+      --pull: 0px;
+      position: absolute;
+      z-index: 2;
+      top: 43%; left: 50%;
+      width: min(79%, 500px);
+      height: 37%;
+      transform: translate(-50%, calc(-5% + var(--pull)));
+      transition: filter .15s;
+      filter: drop-shadow(0 15px 9px #0009);
+    }
+    .tray-base { position: absolute; inset: 10% 0 0; border: 4px solid #9ca8a0; border-top: 7px solid #c4c9b9; background: linear-gradient(180deg, #7c8a80, #475a53 22%, #34453f 100%); clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%); }
+    .tray-base::after { content: ""; position: absolute; inset: 13% 8% 18%; border: 2px solid #ffffff36; border-bottom: 5px solid #24332f; }
+    .tray-handle { position: absolute; left: 39%; right: 39%; bottom: 0; height: 12%; border: 3px solid #b6c1b6; border-radius: 0 0 5px 5px; background: #53645b; }
+    .items-layer { position: absolute; inset: 0 12% 17%; z-index: 3; }
+    .item {
+      position: absolute;
+      z-index: 1;
+      width: 24%; height: 66%; min-width: 48px; min-height: 58px;
+      display: grid; place-items: center;
+      padding: 2px;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      background: #10181922;
+      cursor: pointer;
+      touch-action: none;
+    }
+    .item svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 5px 3px #0006); pointer-events: none; }
+    .item:active { background: #ffffff20; }
+    .item.target { z-index: 3; }
+    .target-orb {
+      position: absolute;
+      left: 50%; top: -13px;
+      width: 19px; height: 19px;
+      transform: translateX(-50%);
+      border: 3px solid #e3ffe6;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 5px #57ed9140, 0 0 19px 7px #57ed91bb;
+      visibility: hidden;
+      animation: orb-pulse var(--orb-duration, .8s) ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    .items-layer.target-visible .target-orb { visibility: visible; }
+    @keyframes orb-pulse { to { transform: translateX(-50%) scale(1.24); box-shadow: 0 0 0 8px #57ed9124, 0 0 25px 9px #57ed91dd; } }
+    .scene-status { position: absolute; z-index: 3; bottom: max(14px, env(safe-area-inset-bottom)); left: 0; right: 0; color: #b8c7bf; text-align: center; font-size: 12px; font-weight: 700; }
+    .side-panel {
+      min-width: 0;
+      padding: max(18px, env(safe-area-inset-top)) max(17px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) 17px;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(145deg, #1c2a2c, #172224 75%);
+    }
+    .panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .panel-heading h1 { margin: 0; font-size: 17px; font-weight: 750; }
+    .turn-label { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .put-list { flex: 1; min-height: 0; display: grid; grid-template-rows: repeat(var(--bin-count, 5), minmax(0, 1fr)); gap: 8px; }
+    .put-slot {
+      position: relative;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 34px;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 13px;
+      border: 1px solid #405253;
+      border-radius: 7px;
+      background: linear-gradient(100deg, #29383a, #202d2f);
+      text-align: left;
+      cursor: pointer;
+      touch-action: none;
+      transition: border-color .12s, background .12s;
+    }
+    .put-slot::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: #71817a; }
+    .slot-copy { min-width: 0; }
+    .slot-number { display: block; color: #aebbb3; font-size: 10px; font-weight: 700; }
+    .slot-name { display: block; margin-top: 2px; color: #edf0e8; font-size: 14px; font-weight: 700; }
+    .led { justify-self: center; width: 14px; height: 14px; border: 2px solid #546363; border-radius: 50%; background: #344243; box-shadow: inset 0 1px 3px #0009; }
+    .put-slot.active { border-color: #a7e66d; background: linear-gradient(100deg, #394a36, #27372f); animation: slot-pulse var(--slot-duration, .75s) ease-in-out infinite alternate; }
+    .put-slot.active::before { background: var(--lime); }
+    .put-slot.active .led { border-color: #e3ffd1; background: var(--lime); box-shadow: 0 0 7px 2px #c6f56b, 0 0 18px #c6f56b88; }
+    @keyframes slot-pulse { to { border-color: #d6ff9a; } }
+    .panel-foot { display: flex; justify-content: space-between; gap: 8px; padding-top: 12px; color: var(--muted); font-size: 10px; }
+    .hand-item {
+      position: fixed; z-index: 10; width: 48px; height: 48px; display: none; place-items: center;
+      border: 2px solid #d4ffc1; border-radius: 50%; background: #183127; box-shadow: 0 0 18px #57ed9166;
+      pointer-events: none; transform: translate(14px, 14px);
+    }
+    .hand-item.visible { display: grid; }
+    .hand-item svg { width: 32px; height: 32px; }
+    .flash { position: fixed; z-index: 12; inset: 0; opacity: 0; pointer-events: none; transition: opacity .12s; }
+    .flash.good { background: #55ff8d38; }
+    .flash.bad { background: #ff555542; }
+    .flash.show { opacity: 1; }
+    .overlay {
+      position: fixed; z-index: 30; inset: 0; display: grid; place-items: center;
+      padding: 24px; background: #0a1112dd; backdrop-filter: blur(7px); text-align: center;
+    }
+    .overlay[hidden] { display: none; }
+    .rotate-overlay { display: none; background: #101b1d; }
+    .rotate-inner { display: grid; justify-items: center; gap: 12px; }
+    .rotate-icon { width: 58px; height: 58px; border: 3px solid var(--lime); border-radius: 12px; display: grid; place-items: center; color: var(--lime); font-size: 30px; animation: rotate-hint 1.5s ease-in-out infinite alternate; }
+    @keyframes rotate-hint { to { transform: rotate(90deg); } }
+    .rotate-inner strong { font-size: 21px; }
+    .gameover-card { width: min(360px, 92vw); padding: 26px; border: 1px solid #526565; border-radius: 10px; background: #1b292b; box-shadow: 0 20px 60px #0009; }
+    .gameover-card h2 { margin: 0 0 7px; font-size: 25px; }
+    .gameover-card p { margin: 0 0 20px; color: var(--muted); }
+    .final-score { color: var(--lime); font-size: 36px; font-weight: 800; }
+    .restart-button, .debug-button { border: 1px solid #9fca66; border-radius: 6px; background: #a9d875; color: #17211a; font-weight: 800; cursor: pointer; touch-action: manipulation; }
+    .restart-button { padding: 11px 22px; }
+    .debug-panel {
+      position: fixed; z-index: 20; left: 10px; bottom: 10px; width: min(420px, calc(100vw - 20px));
+      padding: 10px; border: 1px solid #bc8e4b; border-radius: 7px; background: #192323f2; box-shadow: 0 8px 25px #0008;
+    }
+    .debug-panel[hidden] { display: none; }
+    .debug-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+    .debug-button { padding: 7px 9px; border-color: #657675; background: #293839; color: #e8eee6; font-size: 11px; }
+    .debug-button.selected { border-color: var(--lime); color: var(--lime); }
+    .debug-readout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; padding-top: 8px; color: #d7e2d9; font: 10px/1.4 monospace; }
+    .debug-readout b { color: var(--lime); font-weight: 500; }
+    body.is-portrait .rotate-overlay { display: grid; }
+    body.is-portrait .game { visibility: hidden; }
+    body.is-portrait .game * { animation-play-state: paused; }
+    body.is-portrait .debug-panel { display: none; }
+    @media (orientation: portrait) { .rotate-overlay { display: grid; } .game { visibility: hidden; } .game * { animation-play-state: paused; } .debug-panel { display: none; } }
+    @media (max-height: 430px) and (orientation: landscape) {
+      .topline { top: 8px; }
+      .brand { font-size: 10px; }
+      .score-button { padding: 5px 10px; }
+      .score-number { font-size: 19px; }
+      .side-panel { padding-top: 10px; padding-bottom: 9px; }
+      .panel-heading { margin-bottom: 7px; }
+      .put-list { gap: 5px; }
+      .put-slot { padding: 4px 10px; }
+      .slot-name { margin-top: 0; font-size: 12px; }
+      .panel-foot { padding-top: 6px; }
+      .machine { height: 91%; }
+      .scene-status { bottom: 5px; }
+    }
+    @media (max-width: 650px) and (orientation: landscape) {
+      .game { grid-template-columns: minmax(0, 57fr) minmax(210px, 43fr); }
+      .topline { left: 10px; right: 8px; }
+      .brand { font-size: 9px; letter-spacing: .5px; }
+      .score-button { min-width: 76px; padding: 5px 8px; }
+      .score-number { font-size: 18px; }
+      .panel-heading h1 { font-size: 14px; }
+      .turn-label { font-size: 9px; }
+      .put-slot { grid-template-columns: minmax(0, 1fr) 22px; gap: 4px; padding-inline: 8px; }
+      .slot-name { font-size: 11px; }
+      .slot-number { font-size: 9px; }
+      .led { width: 12px; height: 12px; }
+      .panel-foot { font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" id="game">
+    <section class="work-area" aria-label="Modula verticale liftmodule">
+      <header class="topline">
+        <div class="brand">MODULA · QUICK PICK</div>
+        <button class="score-button" id="scoreButton" type="button" aria-label="Score en debugmodus">
+          <span class="score-label">SCORE</span><span class="score-number" id="score">0</span>
+        </button>
+      </header>
+      <div class="machine-scene">
+        <div class="machine" aria-hidden="true">
+          <div class="machine-cap">MODULA VLM</div><div class="machine-screen"></div><div class="lift-rails"></div>
+          <div class="pick-opening"><span class="opening-label">PICK-OPENING</span></div>
+        </div>
+        <div class="tray" id="tray" aria-label="Uittreklade">
+          <div class="tray-base"></div><div class="items-layer" id="itemsLayer"></div><div class="tray-handle"></div>
+        </div>
+      </div>
+      <div class="scene-status" id="sceneStatus" aria-live="polite">Lade komt eraan</div>
+    </section>
+    <aside class="side-panel" aria-label="Put-locaties">
+      <div class="panel-heading"><h1>Leg het artikel neer</h1><span class="turn-label" id="turnLabel">BEURT 1</span></div>
+      <div class="put-list" id="putList"></div>
+      <div class="panel-foot"><span>WACHT OP LICHTSIGNAAL</span><span id="levelLabel">NIVEAU 1</span></div>
+    </aside>
+  </main>
+  <div class="hand-item" id="handItem" aria-hidden="true"></div>
+  <div class="flash" id="flash"></div>
+  <section class="overlay rotate-overlay" id="rotateOverlay" aria-live="polite">
+    <div class="rotate-inner"><div class="rotate-icon" aria-hidden="true">↻</div><strong>Draai je toestel horizontaal</strong></div>
+  </section>
+  <section class="overlay" id="gameOver" hidden>
+    <div class="gameover-card"><h2>Beurt gemist</h2><p>Eindscore</p><div class="final-score" id="finalScore">0</div><button class="restart-button" id="restartButton" type="button">Opnieuw</button></div>
+  </section>
+  <section class="debug-panel" id="debugPanel" hidden aria-label="Debugbediening">
+    <div class="debug-controls">
+      <button class="debug-button" id="timeButton" type="button">Time x0.1</button>
+      <button class="debug-button" id="autoButton" type="button">Auto-pick</button>
+      <button class="debug-button" id="forceButton" type="button">Forceer game over</button>
+    </div>
+    <div class="debug-readout">
+      <span>Open-tijd <b id="debugOpen">-</b></span><span>Animatiesnelheid <b id="debugSpeed">-</b></span>
+      <span>Beurt <b id="debugTurn">-</b></span><span>Game-state <b id="debugState">-</b></span>
+    </div>
+  </section>
+  <script>
+    "use strict";
+    /*
+      STARTEN: open dit bestand rechtstreeks in een moderne browser en houd het toestel
+      horizontaal. Wijzig de spelbalans bovenaan in CONFIG. Debug: voeg ?debug=1 toe aan
+      de URL of tik vijf keer snel op de score. De debugknoppen sturen de gedeelde klok.
+    */
+    const CONFIG = {
+      startOpenTime: 5,
+      openTimeAcceleration: 0.5,
+      minimumOpenTime: 1.5,
+      startTravelTime: 3,
+      minimumTravelTime: 1,
+      minimumItems: 3,
+      maximumItems: 6,
+      binCount: 5,
+      debugTapWindowMs: 900
+    };
+
+    function validateConfig(config) {
+      const finiteNonnegative = ["startOpenTime", "openTimeAcceleration", "minimumOpenTime", "startTravelTime", "minimumTravelTime"];
+      for (const key of finiteNonnegative) {
+        console.assert(Number.isFinite(config[key]) && config[key] >= 0, `CONFIG.${key} moet een eindig, niet-negatief getal zijn.`);
+      }
+      console.assert(config.startOpenTime > 0 && config.minimumOpenTime > 0, "Open-tijden moeten groter dan nul zijn.");
+      console.assert(config.startTravelTime > 0 && config.minimumTravelTime > 0, "Reistijden moeten groter dan nul zijn.");
+      console.assert(config.minimumOpenTime <= config.startOpenTime, "Minimum open-tijd mag niet groter zijn dan de starttijd.");
+      console.assert(Number.isInteger(config.minimumItems) && config.minimumItems > 0, "Minimum aantal artikelen moet een positief geheel getal zijn.");
+      console.assert(Number.isInteger(config.maximumItems) && config.maximumItems >= config.minimumItems, "Maximum aantal artikelen moet minstens het minimum zijn.");
+      console.assert(Number.isInteger(config.binCount) && config.binCount > 0, "Aantal vakjes moet een positief geheel getal zijn.");
+      console.assert(config.binCount > 0, "Er kunnen nooit meer actieve lichtjes zijn dan vakjes.");
+    }
+    validateConfig(CONFIG);
+
+    const STATE = Object.freeze({ INCOMING: "INKOMEND", OPEN: "OPEN", RETURNING: "TERUGKEREND", WAITING_PUT: "WACHTEN-OP-PUT", GAME_OVER: "GAME OVER" });
+    const $ = (id) => document.getElementById(id);
+    const itemsLayer = $("itemsLayer");
+    const putList = $("putList");
+    const tray = $("tray");
+    const handItem = $("handItem");
+    const debugPanel = $("debugPanel");
+    const mediaPortrait = window.matchMedia("(orientation: portrait)");
+    const colors = ["#e5ac55", "#70b7a1", "#de7580", "#83a9df", "#d6ce7b", "#bb8dcc"];
+    const itemKinds = ["box", "bottle", "pouch"];
+    let state = STATE.INCOMING;
+    let score = 0;
+    let turn = 1;
+    let completedPicks = 0;
+    let openTime = CONFIG.startOpenTime;
+    let travelTime = CONFIG.startTravelTime;
+    let phaseElapsed = 0;
+    let gameTime = 0;
+    let lastFrame = 0;
+    let animationId = 0;
+    let timeFactor = 1;
+    let targetIndex = -1;
+    let activeBin = -1;
+    let bins = [];
+    let items = [];
+    let carriedItem = null;
+    let autoPick = false;
+    let lastScoreTap = 0;
+    let scoreTapCount = 0;
+    let portrait = mediaPortrait.matches;
+    let flashUntil = 0;
+
+    function makeItemSvg(kind, color) {
+      const label = `<path d="M28 30h24v19H28z" fill="#fff" opacity=".24"/><path d="M31 36h18M31 41h12" stroke="#fff" stroke-width="2" opacity=".75"/>`;
+      if (kind === "bottle") return `<svg viewBox="0 0 80 90" aria-hidden="true"><path d="M32 8h16v13l8 8v46c0 6-4 9-10 9H34c-6 0-10-3-10-9V29l8-8z" fill="${color}" stroke="#fff" stroke-opacity=".55" stroke-width="3"/><path d="M34 8h12v8H34z" fill="#eef0dc"/><path d="M29 39h22v22H29z" fill="#fff" opacity=".68"/><path d="M33 46h14M33 51h10" stroke="#43504a" stroke-width="2"/></svg>`;
+      if (kind === "pouch") return `<svg viewBox="0 0 80 90" aria-hidden="true"><path d="M27 13 53 13 59 75 21 75z" fill="${color}" stroke="#fff" stroke-opacity=".58" stroke-width="3"/><path d="M29 18h22M24 69h32" stroke="#fff" stroke-width="3" opacity=".75"/><path d="M28 35h25v20H28z" fill="#fff" opacity=".7"/><path d="M33 42h15M33 47h10" stroke="#43504a" stroke-width="2"/></svg>`;
+      return `<svg viewBox="0 0 80 90" aria-hidden="true"><path d="m15 25 12-12h28l12 12v47H15z" fill="${color}" stroke="#fff" stroke-opacity=".58" stroke-width="3"/><path d="M15 25h52M27 13l8 12M55 13l-8 12" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/>${label}</svg>`;
+    }
+
+    function renderBins() {
+      putList.style.setProperty("--bin-count", CONFIG.binCount);
+      putList.replaceChildren();
+      bins = [];
+      for (let index = 0; index < CONFIG.binCount; index += 1) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "put-slot";
+        button.dataset.bin = String(index);
+        button.innerHTML = `<span class="slot-copy"><span class="slot-number">LOCATIE ${String(index + 1).padStart(2, "0")}</span><span class="slot-name">Vak ${String.fromCharCode(65 + index)}</span></span><span class="led" aria-hidden="true"></span>`;
+        putList.append(button);
+        bins.push(button);
+      }
+      console.assert(bins.length === CONFIG.binCount && bins.length > 0, "Aantal vakjes wijkt af van CONFIG.binCount.");
+    }
+
+    function renderItems() {
+      itemsLayer.replaceChildren();
+      const count = CONFIG.minimumItems + Math.floor(Math.random() * (CONFIG.maximumItems - CONFIG.minimumItems + 1));
+      items = [];
+      const occupied = [];
+      for (let index = 0; index < count; index += 1) {
+        let x = 10 + Math.random() * 66;
+        let y = 14 + Math.random() * 22;
+        let attempts = 0;
+        while (occupied.some((point) => Math.abs(point.x - x) < 21 && Math.abs(point.y - y) < 27) && attempts < 20) {
+          x = 8 + Math.random() * 68;
+          y = 12 + Math.random() * 25;
+          attempts += 1;
+        }
+        occupied.push({ x, y });
+        const kind = itemKinds[Math.floor(Math.random() * itemKinds.length)];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "item";
+        button.dataset.item = String(index);
+        button.setAttribute("aria-label", `Artikel ${index + 1}`);
+        button.style.left = `${x}%`;
+        button.style.top = `${y}%`;
+        button.style.transform = `translate(-50%, -50%) rotate(${Math.round(Math.random() * 10 - 5)}deg)`;
+        button.innerHTML = makeItemSvg(kind, color);
+        itemsLayer.append(button);
+        items.push({ kind, color, button });
+      }
+      targetIndex = Math.floor(Math.random() * items.length);
+      items[targetIndex].button.classList.add("target");
+      const marker = document.createElement("span");
+      marker.className = "target-orb";
+      marker.setAttribute("aria-hidden", "true");
+      items[targetIndex].button.append(marker);
+    }
+
+    function setState(nextState) {
+      state = nextState;
+      phaseElapsed = 0;
+      itemsLayer.classList.toggle("target-visible", state === STATE.OPEN);
+      updateStatus();
+      updateDebug();
+    }
+
+    function updateStatus() {
+      const labels = {
+        [STATE.INCOMING]: "Lade komt eraan",
+        [STATE.OPEN]: "Tik het artikel met de groene markering aan",
+        [STATE.RETURNING]: carriedItem ? "Breng het artikel naar het verlichte vak" : "Lade keert terug",
+        [STATE.WAITING_PUT]: "Tik op het vakje met het brandende lichtje",
+        [STATE.GAME_OVER]: "Beurt gemist"
+      };
+      $("sceneStatus").textContent = labels[state];
+      $("turnLabel").textContent = `BEURT ${turn}`;
+      $("levelLabel").textContent = `NIVEAU ${completedPicks + 1}`;
+    }
+
+    function updateDebug() {
+      if (debugPanel.hidden) return;
+      $("debugOpen").textContent = `${openTime.toFixed(1)} s`;
+      $("debugSpeed").textContent = `${(1 / travelTime).toFixed(2)}× (${travelTime.toFixed(1)} s)`;
+      $("debugTurn").textContent = String(turn);
+      $("debugState").textContent = state;
+    }
+
+    function flash(good) {
+      const node = $("flash");
+      node.className = `flash ${good ? "good" : "bad"} show`;
+      flashUntil = gameTime + 0.16;
+      if (navigator.vibrate) navigator.vibrate(good ? 25 : [35, 30, 35]);
+    }
+
+    function startLoop() {
+      if (animationId || state === STATE.GAME_OVER) return;
+      lastFrame = 0;
+      animationId = requestAnimationFrame(frame);
+    }
+
+    function stopLoop() {
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = 0;
+      lastFrame = 0;
+    }
+
+    function beginTurn() {
+      turn += 1;
+      activeBin = -1;
+      carriedItem = null;
+      handItem.classList.remove("visible");
+      for (const bin of bins) bin.classList.remove("active");
+      renderItems();
+      tray.style.setProperty("--pull", "0px");
+      setState(STATE.INCOMING);
+      startLoop();
+    }
+
+    function resetGame() {
+      stopLoop();
+      autoPick = false;
+      timeFactor = 1;
+      $("autoButton").classList.remove("selected");
+      $("timeButton").classList.remove("selected");
+      $("timeButton").textContent = "Time x0.1";
+      document.body.style.setProperty("--orb-duration", ".8s");
+      document.body.style.setProperty("--slot-duration", ".75s");
+      $("flash").classList.remove("show");
+      flashUntil = 0;
+      score = 0;
+      turn = 1;
+      completedPicks = 0;
+      openTime = CONFIG.startOpenTime;
+      travelTime = CONFIG.startTravelTime;
+      gameTime = 0;
+      activeBin = -1;
+      carriedItem = null;
+      handItem.classList.remove("visible");
+      $("score").textContent = "0";
+      $("gameOver").hidden = true;
+      for (const bin of bins) bin.classList.remove("active");
+      renderItems();
+      tray.style.setProperty("--pull", "0px");
+      setState(STATE.INCOMING);
+      startLoop();
+    }
+
+    function endGame() {
+      carriedItem = null;
+      handItem.classList.remove("visible");
+      itemsLayer.replaceChildren();
+      $("flash").classList.remove("show");
+      flashUntil = 0;
+      for (const bin of bins) bin.classList.remove("active");
+      setState(STATE.GAME_OVER);
+      $("finalScore").textContent = String(score);
+      $("gameOver").hidden = false;
+      stopLoop();
+    }
+
+    function pickItem(index) {
+      if (state !== STATE.OPEN || index !== targetIndex || !items[index]) return false;
+      carriedItem = items[index];
+      handItem.innerHTML = makeItemSvg(carriedItem.kind, carriedItem.color);
+      handItem.classList.add("visible");
+      items[index].button.remove();
+      flash(true);
+      activeBin = Math.floor(Math.random() * bins.length);
+      console.assert(activeBin >= 0 && activeBin < bins.length, "Actief lichtje valt buiten de vakjes.");
+      bins[activeBin].classList.add("active");
+      console.assert(bins.filter((bin) => bin.classList.contains("active")).length === 1, "Er moet exact één lichtje branden.");
+      setState(STATE.RETURNING);
+      startLoop();
+      return true;
+    }
+
+    function deliverItem(index) {
+      if (state !== STATE.WAITING_PUT || index !== activeBin || !carriedItem) return false;
+      score += 1;
+      completedPicks += 1;
+      openTime = Math.max(CONFIG.minimumOpenTime, openTime - CONFIG.openTimeAcceleration);
+      const speedRatio = openTime / CONFIG.startOpenTime;
+      travelTime = Math.max(CONFIG.minimumTravelTime, CONFIG.startTravelTime * speedRatio);
+      $("score").textContent = String(score);
+      bins[activeBin].classList.remove("active");
+      flash(true);
+      carriedItem = null;
+      handItem.classList.remove("visible");
+      beginTurn();
+      return true;
+    }
+
+    function onPointerDown(event) {
+      const itemButton = event.target.closest(".item");
+      if (itemButton && itemsLayer.contains(itemButton)) {
+        event.preventDefault();
+        const index = Number(itemButton.dataset.item);
+        if (index === targetIndex && state === STATE.OPEN) pickItem(index);
+        else if (state === STATE.OPEN) flash(false);
+        return;
+      }
+      const binButton = event.target.closest(".put-slot");
+      if (binButton && putList.contains(binButton)) {
+        event.preventDefault();
+        deliverItem(Number(binButton.dataset.bin));
+      }
+    }
+
+    function updateTray() {
+      let progress = 0;
+      if (state === STATE.INCOMING) progress = Math.min(1, phaseElapsed / travelTime);
+      else if (state === STATE.OPEN || state === STATE.WAITING_PUT) progress = 1;
+      else if (state === STATE.RETURNING) progress = carriedItem
+        ? Math.max(0, 1 - phaseElapsed / travelTime)
+        : Math.max(0, 1 - phaseElapsed / travelTime);
+      const pullDistance = Math.max(70, Math.min(145, window.innerHeight * 0.25));
+      tray.style.setProperty("--pull", `${(progress * pullDistance).toFixed(1)}px`);
+    }
+
+    function advance(delta) {
+      gameTime += delta;
+      phaseElapsed += delta;
+      if (flashUntil && gameTime >= flashUntil) {
+        $("flash").classList.remove("show");
+        flashUntil = 0;
+      }
+      if (state === STATE.INCOMING && phaseElapsed >= travelTime) {
+        phaseElapsed = 0;
+        setState(STATE.OPEN);
+      } else if (state === STATE.OPEN) {
+        if (autoPick) pickItem(targetIndex);
+        else if (phaseElapsed >= openTime) setState(STATE.RETURNING);
+      } else if (state === STATE.RETURNING && phaseElapsed >= travelTime) {
+        if (carriedItem) setState(STATE.WAITING_PUT);
+        else endGame();
+      } else if (state === STATE.WAITING_PUT && autoPick) {
+        deliverItem(activeBin);
+      }
+    }
+
+    function frame(timestamp) {
+      animationId = 0;
+      if (state === STATE.GAME_OVER) return;
+      const realDelta = lastFrame ? Math.min((timestamp - lastFrame) / 1000, 0.1) : 0;
+      lastFrame = timestamp;
+      if (!portrait) advance(realDelta * timeFactor);
+      updateTray();
+      updateDebug();
+      if (state !== STATE.GAME_OVER) animationId = requestAnimationFrame(frame);
+    }
+
+    function setPortrait(matches) {
+      portrait = matches;
+      document.body.classList.toggle("is-portrait", portrait);
+      if (!portrait && state !== STATE.GAME_OVER) startLoop();
+    }
+
+    function enableDebug() {
+      debugPanel.hidden = false;
+      updateDebug();
+    }
+
+    $("game").addEventListener("pointerdown", onPointerDown);
+    $("restartButton").addEventListener("pointerdown", (event) => { event.preventDefault(); resetGame(); });
+    $("timeButton").addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      timeFactor = timeFactor === 1 ? 0.1 : 1;
+      document.body.style.setProperty("--orb-duration", `${0.8 / timeFactor}s`);
+      document.body.style.setProperty("--slot-duration", `${0.75 / timeFactor}s`);
+      event.currentTarget.classList.toggle("selected", timeFactor === 0.1);
+      event.currentTarget.textContent = timeFactor === 0.1 ? "Time x1" : "Time x0.1";
+    });
+    $("autoButton").addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      autoPick = !autoPick;
+      event.currentTarget.classList.toggle("selected", autoPick);
+      if (autoPick) startLoop();
+    });
+    $("forceButton").addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      if (state === STATE.GAME_OVER) return;
+      carriedItem = null;
+      handItem.classList.remove("visible");
+      for (const bin of bins) bin.classList.remove("active");
+      activeBin = -1;
+      if (state !== STATE.RETURNING) setState(STATE.RETURNING);
+      else phaseElapsed = 0;
+      startLoop();
+    });
+    $("scoreButton").addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      const now = performance.now();
+      scoreTapCount = now - lastScoreTap <= CONFIG.debugTapWindowMs ? scoreTapCount + 1 : 1;
+      lastScoreTap = now;
+      if (scoreTapCount >= 5) { enableDebug(); scoreTapCount = 0; }
+    });
+    mediaPortrait.addEventListener("change", (event) => setPortrait(event.matches));
+    window.addEventListener("resize", () => setPortrait(mediaPortrait.matches));
+
+    renderBins();
+    renderItems();
+    document.body.classList.toggle("is-portrait", portrait);
+    if (new URLSearchParams(window.location.search).get("debug") === "1") enableDebug();
+    setState(STATE.INCOMING);
+    startLoop();
+
+     /*
+      TESTSCENARIO'S (uit te voeren in landscape; ?debug=1 toont de hulpmiddelen)
+      a. Beurtcyclus: Auto-pick loopt pick, terugkeer, put en nieuwe lade door; bij tien
+        punten zijn tien nieuwe beurten gestart. De score stijgt alleen bij put.
+      b. Verkeerd artikel: tik een niet-gemarkeerd artikel tijdens OPEN; rode feedback,
+        score blijft gelijk en OPEN blijft actief.
+      c. Gemiste beurt: laat de open-tijd verstrijken; na terugkeer verschijnt GAME OVER.
+        Opnieuw reset score, open-/reistijd, artikelen, lichtjes en de ene rAF-lus.
+      d. Progressie: elke geldige put verlaagt openTime met exact 0,5 s tot 1,5 s;
+        Math.max en de reistijdvloer houden duur en snelheid eindig en positief.
+      e. Randen/te vroege put: event-delegatie verwerkt één dichtstbijzijnde knop; een
+        vakje zonder gedragen artikel wordt genegeerd en geeft geen punt of foutflits.
+      f. Rotatie: portrait-overlay gebruikt CSS orientation plus matchMedia/resize; de
+        spelklok telt in portrait niet door en hervat bij landscape vanaf dezelfde fase.
+      g. Resizen: scene, lade en vijf vakken gebruiken flex/grid en begrensde afmetingen;
+        de pointerlisteners hangen aan vaste containers en blijven na resize actief.
+      h. Dubbele tik: state wisselt synchroon bij pick/put; extra pointerdowns in dezelfde
+        fase kunnen geen tweede artikel pakken of score verhogen.
+      i. Geheugen/timers: één rAF-id wordt hergebruikt en op GAME OVER geannuleerd; er zijn
+        geen interval- of timeout-listeners. Feedback deelt de spelklok; reset maakt geen
+        extra listeners of loops aan. Auto-pick is de snelle 20+ beurten-stresstest.
+      Ontwerpkeuze: na een pick rijdt de lade meteen terug; bij missen rijdt ze eerst
+      volledig terug en eindigt dan. Willekeurige artikelen en putlocaties worden per beurt gekozen.
+     */
+  </script>
+</body>
+</html>
