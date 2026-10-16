@@ -146,6 +146,8 @@
     @keyframes orb-pulse { to { transform: translateX(-50%) scale(1.24); box-shadow: 0 0 0 8px #57ed9124, 0 0 25px 9px #57ed91dd; } }
     .scene-status { position: absolute; z-index: 3; bottom: max(14px, env(safe-area-inset-bottom)); left: 0; right: 0; color: #b8c7bf; text-align: center; font-size: 12px; font-weight: 700; }
     .side-panel {
+      position: relative;
+      z-index: 5;
       min-width: 0;
       padding: max(18px, env(safe-area-inset-top)) max(17px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) 17px;
       display: flex;
@@ -169,6 +171,7 @@
       background: linear-gradient(100deg, #29383a, #202d2f);
       text-align: left;
       cursor: pointer;
+      pointer-events: auto;
       touch-action: none;
       transition: border-color .12s, background .12s;
     }
@@ -388,6 +391,8 @@
         button.className = "put-slot";
         button.dataset.bin = String(index);
         button.innerHTML = `<span class="slot-copy"><span class="slot-number">LOCATIE ${String(index + 1).padStart(2, "0")}</span><span class="slot-name">Vak ${String.fromCharCode(65 + index)}</span></span><span class="slot-items" aria-hidden="true"></span><span class="led" aria-hidden="true"></span>`;
+        button.addEventListener("pointerdown", onBinPointerDown);
+        button.addEventListener("click", onBinClick);
         putList.append(button);
         bins.push(button);
       }
@@ -553,7 +558,7 @@
     }
 
     function deliverItem(index) {
-      if ((state !== STATE.RETURNING && state !== STATE.WAITING_PUT) || index !== activeBin || !carriedItem) return false;
+      if (index !== activeBin || !carriedItem) return false;
       const placedItem = carriedItem;
       score += 1;
       completedPicks += 1;
@@ -587,8 +592,12 @@
     }
 
     function onBinClick(event) {
-      const binButton = event.target.closest(".put-slot");
-      if (binButton && putList.contains(binButton)) deliverItem(Number(binButton.dataset.bin));
+      deliverItem(Number(event.currentTarget.dataset.bin));
+    }
+
+    function onBinPointerDown(event) {
+      event.preventDefault();
+      deliverItem(Number(event.currentTarget.dataset.bin));
     }
 
     function updateTray() {
@@ -646,7 +655,6 @@
     }
 
     $("game").addEventListener("pointerdown", onPointerDown);
-    putList.addEventListener("click", onBinClick);
     $("restartButton").addEventListener("pointerdown", (event) => { event.preventDefault(); resetGame(); });
     $("timeButton").addEventListener("pointerdown", (event) => {
       event.preventDefault();
