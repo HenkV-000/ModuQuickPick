@@ -584,11 +584,11 @@
         else if (state === STATE.OPEN) flash(false);
         return;
       }
+    }
+
+    function onBinClick(event) {
       const binButton = event.target.closest(".put-slot");
-      if (binButton && putList.contains(binButton)) {
-        event.preventDefault();
-        deliverItem(Number(binButton.dataset.bin));
-      }
+      if (binButton && putList.contains(binButton)) deliverItem(Number(binButton.dataset.bin));
     }
 
     function updateTray() {
@@ -646,6 +646,7 @@
     }
 
     $("game").addEventListener("pointerdown", onPointerDown);
+    putList.addEventListener("click", onBinClick);
     $("restartButton").addEventListener("pointerdown", (event) => { event.preventDefault(); resetGame(); });
     $("timeButton").addEventListener("pointerdown", (event) => {
       event.preventDefault();
@@ -700,7 +701,7 @@
         Opnieuw reset score, open-/reistijd, artikelen, lichtjes en de ene rAF-lus.
       d. Progressie: elke geldige put verlaagt openTime met exact 0,5 s tot 1,5 s;
         Math.max en de reistijdvloer houden duur en snelheid eindig en positief.
-      e. Randen/te vroege put: event-delegatie verwerkt één dichtstbijzijnde knop; een
+      e. Randen/te vroege put: klikdelegatie verwerkt één dichtstbijzijnde knop; een
         vakje zonder gedragen artikel wordt genegeerd en geeft geen punt of foutflits.
         Het juiste vak tijdens de terugkeer verwerkt het artikel meteen; de lade rijdt
         door naar binnen en de volgende beurt start pas als de lade binnen is.
