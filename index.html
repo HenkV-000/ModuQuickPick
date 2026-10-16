@@ -364,6 +364,7 @@
     let bins = [];
     let items = [];
     let carriedItem = null;
+    let deliveredThisTurn = false;
     let autoPick = false;
     let lastScoreTap = 0;
     let scoreTapCount = 0;
@@ -482,6 +483,7 @@
       turn += 1;
       activeBin = -1;
       carriedItem = null;
+      deliveredThisTurn = false;
       handItem.classList.remove("visible");
       for (const bin of bins) bin.classList.remove("active");
       renderItems();
@@ -510,6 +512,7 @@
       gameTime = 0;
       activeBin = -1;
       carriedItem = null;
+      deliveredThisTurn = false;
       handItem.classList.remove("visible");
       $("score").textContent = "0";
       $("gameOver").hidden = true;
@@ -550,7 +553,7 @@
     }
 
     function deliverItem(index) {
-      if (state !== STATE.WAITING_PUT || index !== activeBin || !carriedItem) return false;
+      if ((state !== STATE.RETURNING && state !== STATE.WAITING_PUT) || index !== activeBin || !carriedItem) return false;
       const placedItem = carriedItem;
       score += 1;
       completedPicks += 1;
@@ -565,8 +568,10 @@
       bins[activeBin].querySelector(".slot-items").append(placedIcon);
       flash(true);
       carriedItem = null;
+      deliveredThisTurn = true;
       handItem.classList.remove("visible");
-      beginTurn();
+      updateStatus();
+      if (state === STATE.WAITING_PUT) beginTurn();
       return true;
     }
 
@@ -611,6 +616,7 @@
         else if (phaseElapsed >= openTime) setState(STATE.RETURNING);
       } else if (state === STATE.RETURNING && phaseElapsed >= travelTime) {
         if (carriedItem) setState(STATE.WAITING_PUT);
+        else if (deliveredThisTurn) beginTurn();
         else endGame();
       } else if (state === STATE.WAITING_PUT && autoPick) {
         deliverItem(activeBin);
@@ -659,6 +665,7 @@
       event.preventDefault();
       if (state === STATE.GAME_OVER) return;
       carriedItem = null;
+      deliveredThisTurn = false;
       handItem.classList.remove("visible");
       for (const bin of bins) bin.classList.remove("active");
       activeBin = -1;
@@ -695,6 +702,8 @@
         Math.max en de reistijdvloer houden duur en snelheid eindig en positief.
       e. Randen/te vroege put: event-delegatie verwerkt één dichtstbijzijnde knop; een
         vakje zonder gedragen artikel wordt genegeerd en geeft geen punt of foutflits.
+        Het juiste vak tijdens de terugkeer verwerkt het artikel meteen; de lade rijdt
+        door naar binnen en de volgende beurt start pas als de lade binnen is.
       f. Rotatie: portrait-overlay gebruikt CSS orientation plus matchMedia/resize; de
         spelklok telt in portrait niet door en hervat bij landscape vanaf dezelfde fase.
       g. Resizen: scene, lade en vijf vakken gebruiken flex/grid en begrensde afmetingen;
