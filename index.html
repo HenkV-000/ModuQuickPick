@@ -162,9 +162,11 @@
     .item:active { background: #ffffff20; }
     .item.target { z-index: 3; }
     .target-orb {
-      position: absolute;
+      grid-area: 1 / 1;
+      place-self: center;
       z-index: 4;
-      inset: 0;
+      width: 19px;
+      height: 19px;
       display: grid;
       place-items: center;
       visibility: hidden;
@@ -173,8 +175,8 @@
     }
     .target-orb::before {
       content: "";
-      width: 19px;
-      height: 19px;
+      width: 100%;
+      height: 100%;
       border: 3px solid #e3ffe6;
       border-radius: 50%;
       background: var(--green);
