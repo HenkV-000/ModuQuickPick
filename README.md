@@ -1,2 +1,2 @@
-# ModuQuickPick
-A game for quick pickers
+# Quick Pick - Testgame
+Een testgame voor orderpickers.
